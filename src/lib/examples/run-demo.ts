@@ -10,13 +10,13 @@ export async function runFlowDemo() {
 	console.log('🚀 Starting Flow Execution Demo');
 	
 	try {
-		// Demo 1: Pre-built example flows
+	
 		await demonstrateFlowExecution();
 		
-		// Demo 2: Error handling
+	
 		await demonstrateErrorHandling();
 		
-		// Demo 3: Execute template flows
+	
 		console.log('\n📋 Testing Template Flows:');
 		const templates = await flowService.getFlowTemplates();
 		
@@ -35,7 +35,7 @@ export async function runFlowDemo() {
 	}
 }
 
-// Make it available globally for browser console
+
 if (typeof window !== 'undefined') {
 	(window as any).runFlowDemo = runFlowDemo;
 } 

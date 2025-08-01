@@ -1,11 +1,9 @@
 import { flowExecutor } from '../services/FlowExecutor';
 import type { FlowData } from '../types/automation';
 
-/**
- * Example: How topological sort determines execution order
- */
 
-// Example 1: Simple LLM → JIRA flow
+
+
 const simpleFlow: FlowData = {
 	id: 'simple-flow',
 	name: 'Simple LLM to JIRA',
@@ -50,7 +48,7 @@ const simpleFlow: FlowData = {
 	]
 };
 
-// Example 2: Complex flow with parallel execution
+
 const complexFlow: FlowData = {
 	id: 'complex-flow',
 	name: 'Complex Multi-Branch Flow',
@@ -127,24 +125,12 @@ const complexFlow: FlowData = {
 	]
 };
 
-/**
- * Execution Order Examples:
- * 
- * Simple Flow:
- * 1. llm-1 (no dependencies)
- * 2. jira-1 (depends on llm-1)
- * 
- * Complex Flow:
- * 1. trigger-1 (no dependencies)
- * 2. llm-1 (depends on trigger-1)
- * 3. jira-story, notification (both depend on llm-1, can run in parallel)
- * 4. jira-comment (depends on jira-story)
- */
+
 
 export async function demonstrateFlowExecution() {
 	console.log('🚀 Flow Execution Demo');
 	
-	// Demo 1: Simple sequential flow
+
 	console.log('\n📝 Executing Simple Flow:');
 	const result1 = await flowExecutor.executeFlow(simpleFlow);
 	console.log('✅ Execution Result:', {
@@ -153,7 +139,7 @@ export async function demonstrateFlowExecution() {
 		order: result1.executionOrder
 	});
 	
-	// Demo 2: Complex flow with parallel execution
+
 	console.log('\n🔀 Executing Complex Flow (Parallel):');
 	const result2 = await flowExecutor.executeFlowParallel(complexFlow);
 	console.log('✅ Execution Result:', {
@@ -162,7 +148,7 @@ export async function demonstrateFlowExecution() {
 		order: result2.executionOrder
 	});
 	
-	// Demo 3: Show parallel groups
+
 	console.log('\n🎯 Parallel Execution Groups:');
 	const groups = flowExecutor.getParallelExecutionGroups(complexFlow.nodes, complexFlow.edges);
 	groups.forEach((group, index) => {
@@ -196,7 +182,7 @@ const circularFlow: FlowData = {
 	],
 	edges: [
 		{ id: 'a-to-b', source: 'node-a', target: 'node-b' },
-		{ id: 'b-to-a', source: 'node-b', target: 'node-a' } // Creates cycle!
+		{ id: 'b-to-a', source: 'node-b', target: 'node-a' }
 	]
 };
 

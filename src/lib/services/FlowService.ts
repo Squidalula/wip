@@ -3,7 +3,7 @@ import type { AutomationNode, FlowData, FlowTemplate, Edge } from '../types/auto
 class FlowService {
 	private flows: Map<string, FlowData> = new Map();
 
-	// Default flows - minimal templates only
+
 	private defaultFlows: FlowTemplate[] = [
 		{
 			id: 'empty',
@@ -14,19 +14,19 @@ class FlowService {
 		}
 	];
 
-	// Get available templates
+
 	async getFlowTemplates(): Promise<FlowTemplate[]> {
 		return this.defaultFlows;
 	}
 
-	// Get a specific flow by ID
+
 	async getFlow(id: string): Promise<FlowData | null> {
-		// Check saved flows first
+
 		if (this.flows.has(id)) {
 			return this.flows.get(id)!;
 		}
 
-		// Fallback to templates
+
 		const template = this.defaultFlows.find(t => t.id === id);
 		if (template) {
 			return {
@@ -38,7 +38,7 @@ class FlowService {
 		return null;
 	}
 
-	// Save a new flow
+
 	async saveFlow(flow: Omit<FlowData, 'id' | 'createdAt' | 'updatedAt'>): Promise<FlowData> {
 		const id = `flow_${Date.now()}`;
 		const now = new Date().toISOString();
@@ -54,7 +54,7 @@ class FlowService {
 		return savedFlow;
 	}
 
-	// Update an existing flow
+
 	async updateFlow(id: string, flow: Partial<FlowData>): Promise<FlowData> {
 		const existing = this.flows.get(id);
 		if (!existing) {
@@ -64,7 +64,7 @@ class FlowService {
 		const updatedFlow: FlowData = {
 			...existing,
 			...flow,
-			id, // Preserve original ID
+			id,
 			updatedAt: new Date().toISOString()
 		};
 
@@ -72,7 +72,7 @@ class FlowService {
 		return updatedFlow;
 	}
 
-	// Delete a flow
+
 	async deleteFlow(id: string): Promise<void> {
 		if (!this.flows.has(id)) {
 			throw new Error(`Flow with id ${id} not found`);
@@ -80,17 +80,17 @@ class FlowService {
 		this.flows.delete(id);
 	}
 
-	// Get initial nodes and edges (backward compatibility)
+
 	getInitialNodes(): AutomationNode[] {
-		// Return empty array - no default nodes anymore
+
 		return [];
 	}
 
 	getInitialEdges(): Edge[] {
-		// Return empty array - no default edges anymore  
+  
 		return [];
 	}
 }
 
-// Export singleton instance
+
 export const flowService = new FlowService(); 

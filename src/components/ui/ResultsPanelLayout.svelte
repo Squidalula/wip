@@ -24,30 +24,30 @@
 		isCollapsedExternal 
 	}: Props = $props();
 
-	// Panel state management
+
 	let isCollapsed = $state(false);
 	let activeTab = $state<'node' | 'flow'>('node');
 
-	// Auto-switch to flow tab when execution starts
+
 	$effect(() => {
 		if (isExecuting || flowExecutionResult) {
 			activeTab = 'flow';
 		}
 	});
 
-	// Auto-switch to node tab when a node is selected (and no execution is running)
+
 	$effect(() => {
 		if (selectedNode && !isExecuting) {
 			activeTab = 'node';
 		}
 	});
 
-	// Notify parent when collapse state changes
+
 	$effect(() => {
 		onCollapseChange?.(isCollapsed);
 	});
 
-	// Sync external collapse state
+
 	$effect(() => {
 		if (isCollapsedExternal !== undefined) {
 			isCollapsed = isCollapsedExternal;
@@ -58,13 +58,13 @@
 
 	function setActiveTab(tab: 'node' | 'flow') {
 		activeTab = tab;
-		// Expand if collapsed when switching tabs
+
 		if (isCollapsed) {
 			isCollapsed = false;
 		}
 	}
 
-	// Calculate notification badges
+
 	function getNodeTabBadge(): boolean {
 		return !!(selectedNode && selectedNodeResult);
 	}
@@ -78,7 +78,7 @@
 		return flowExecutionResult.results.filter(r => !r.success).length;
 	}
 
-	// Theme-aware styling
+
 	const panelStyles = $derived(() => {
 		const isDark = themeManager.isCurrentThemeDark();
 		return {
@@ -94,21 +94,21 @@
 	});
 </script>
 
-<!-- Results Panel Container -->
+
 <div class="flex h-full">
-	<!-- Panel Content -->
+
 	<div 
 		class="flex flex-col transition-all duration-300 ease-in-out {isCollapsed ? 'w-0' : 'w-96'} min-w-0"
 		style="background-color: {panelStyles().backgroundColor}; border-left: 2px solid {panelStyles().borderColor};"
 	>
 		{#if !isCollapsed}
-			<!-- Tab Navigation -->
+
 			<div 
 				class="flex-shrink-0 border-b"
 				style="background-color: {panelStyles().tabBg}; border-color: {panelStyles().borderColor};"
 			>
 				<div class="flex">
-					<!-- Node Output Tab -->
+
 					<button
 						onclick={() => setActiveTab('node')}
 						class="flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer relative border-b-2 hover:opacity-80"
@@ -121,7 +121,7 @@
 						Node Output
 					</button>
 
-					<!-- Flow Execution Tab -->
+
 					<button
 						onclick={() => setActiveTab('flow')}
 						class="flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer relative border-b-2 hover:opacity-80"
@@ -136,7 +136,7 @@
 				</div>
 			</div>
 
-			<!-- Tab Content -->
+
 			<div class="flex-1 min-h-0">
 				{#if activeTab === 'node'}
 					<NodeOutputPanel 
@@ -160,32 +160,4 @@
 
 
 
-<style>
-	/* Ensure proper scrolling behavior */
-	.min-h-0 {
-		min-height: 0;
-	}
-	
-	/* Custom animation for the collapse/expand */
-	@keyframes slideIn {
-		from {
-			transform: translateX(100%);
-			opacity: 0;
-		}
-		to {
-			transform: translateX(0);
-			opacity: 1;
-		}
-	}
-	
-	@keyframes slideOut {
-		from {
-			transform: translateX(0);
-			opacity: 1;
-		}
-		to {
-			transform: translateX(100%);
-			opacity: 0;
-		}
-	}
-</style> 
+ 

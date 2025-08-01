@@ -7,21 +7,18 @@ import type {
 } from '../types/automation';
 
 export class FlowExecutor {
-	/**
-	 * Perform topological sort to determine execution order
-	 * Returns nodes in the order they should be executed
-	 */
+
 	private topologicalSort(nodes: AutomationNode[], edges: Edge[]): string[] {
 		const graph = new Map<string, string[]>();
 		const inDegree = new Map<string, number>();
 		
-		// Initialize graph and in-degree count
+	
 		nodes.forEach(node => {
 			graph.set(node.id, []);
 			inDegree.set(node.id, 0);
 		});
 		
-		// Build adjacency list and count in-degrees
+	
 		edges.forEach(edge => {
 			const sourceNeighbors = graph.get(edge.source) || [];
 			sourceNeighbors.push(edge.target);
@@ -31,7 +28,7 @@ export class FlowExecutor {
 			inDegree.set(edge.target, targetInDegree + 1);
 		});
 		
-		// Find nodes with no incoming edges (start points)
+	
 		const queue: string[] = [];
 		inDegree.forEach((degree, nodeId) => {
 			if (degree === 0) {
@@ -41,25 +38,25 @@ export class FlowExecutor {
 		
 		const executionOrder: string[] = [];
 		
-		// Process nodes in topological order
+
 		while (queue.length > 0) {
 			const currentNode = queue.shift()!;
 			executionOrder.push(currentNode);
 			
-			// Reduce in-degree for all neighbors
+
 			const neighbors = graph.get(currentNode) || [];
 			neighbors.forEach(neighbor => {
 				const newInDegree = (inDegree.get(neighbor) || 0) - 1;
 				inDegree.set(neighbor, newInDegree);
 				
-				// If neighbor has no more dependencies, add to queue
+
 				if (newInDegree === 0) {
 					queue.push(neighbor);
 				}
 			});
 		}
 		
-		// Check for circular dependencies
+
 		if (executionOrder.length !== nodes.length) {
 			throw new Error('Circular dependency detected in workflow');
 		}
@@ -67,21 +64,18 @@ export class FlowExecutor {
 		return executionOrder;
 	}
 	
-	/**
-	 * Get nodes that can execute in parallel (same level in topological order)
-	 * Returns groups of nodes that can run simultaneously
-	 */
+
 	getParallelExecutionGroups(nodes: AutomationNode[], edges: Edge[]): string[][] {
 		const graph = new Map<string, string[]>();
 		const inDegree = new Map<string, number>();
 		
-		// Initialize
+
 		nodes.forEach(node => {
 			graph.set(node.id, []);
 			inDegree.set(node.id, 0);
 		});
 		
-		// Build graph
+
 		edges.forEach(edge => {
 			const sourceNeighbors = graph.get(edge.source) || [];
 			sourceNeighbors.push(edge.target);
@@ -95,7 +89,7 @@ export class FlowExecutor {
 		const remaining = new Set(nodes.map(n => n.id));
 		
 		while (remaining.size > 0) {
-			// Find all nodes with no dependencies in current iteration
+	
 			const currentGroup: string[] = [];
 			
 			remaining.forEach(nodeId => {
@@ -110,7 +104,7 @@ export class FlowExecutor {
 			
 			groups.push(currentGroup);
 			
-			// Remove processed nodes and update dependencies
+
 			currentGroup.forEach(nodeId => {
 				remaining.delete(nodeId);
 				const neighbors = graph.get(nodeId) || [];

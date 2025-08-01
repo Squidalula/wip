@@ -41,13 +41,11 @@ export class LLMClient {
 		baseUrl: string = 'http://localhost:8080/api/llm',
 		timeout: number = 30000
 	) {
-		this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+		this.baseUrl = baseUrl.replace(/\/$/, '');
 		this.timeout = timeout;
 	}
 
-	/**
-	 * Send a prompt to the LLM endpoint
-	 */
+
 	async sendPrompt(request: LLMRequest): Promise<LLMResponse> {
 		const url = `${this.baseUrl}/chat`;
 		
@@ -106,9 +104,7 @@ export class LLMClient {
 		}
 	}
 
-	/**
-	 * Get available models from the backend
-	 */
+
 	async getAvailableModels(): Promise<string[]> {
 		const url = `${this.baseUrl}/models`;
 		
@@ -139,9 +135,7 @@ export class LLMClient {
 		}
 	}
 
-	/**
-	 * Stream response from LLM (for real-time responses)
-	 */
+
 	async streamPrompt(
 		request: LLMRequest,
 		onChunk: (chunk: string) => void,
@@ -217,7 +211,7 @@ export class LLMClient {
 									onChunk(parsed.content);
 								}
 							} catch (e) {
-								// Skip invalid JSON chunks
+
 							}
 						}
 					}
@@ -233,9 +227,7 @@ export class LLMClient {
 		}
 	}
 
-	/**
-	 * Update configuration
-	 */
+
 	updateConfig(config: { baseUrl?: string; timeout?: number }) {
 		if (config.baseUrl) {
 			this.baseUrl = config.baseUrl.replace(/\/$/, '');
@@ -246,10 +238,10 @@ export class LLMClient {
 	}
 }
 
-// Default instance
+
 export const llmClient = new LLMClient();
 
-// Common model constants
+
 export const LLM_MODELS = {
 	GPT_4: 'gpt-4',
 	GPT_3_5_TURBO: 'gpt-3.5-turbo',
