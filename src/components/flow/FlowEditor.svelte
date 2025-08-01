@@ -4,10 +4,11 @@
 	import { NodeData, type AutomationNode } from '../../lib/stores/nodes';
 	import { themeManager } from '../../lib/stores/theme.svelte';
 	import NodeModal from '../nodes/DynamicNodeModal.svelte';
+	import ResultsPanelLayout from '../ui/ResultsPanelLayout.svelte';
 	import { getNodeSchema } from '../../lib/types/node-schemas';
 	import { flowService } from '../../lib/services/FlowService';
 	import { flowExecutor } from '../../lib/services/FlowExecutor';
-	import type { FlowExecutionResult } from '../../lib/types/automation';
+	import type { FlowExecutionResult, ExecutionResult } from '../../lib/types/automation';
 
 	let flowLoaded = $state(false);
 	let SvelteFlow = $state<any>(null);
@@ -23,6 +24,12 @@
 		isModalOpen = $state(false);
 		selectedNode = $state<AutomationNode | null>(null);
 		modalPosition = $state({ x: 0, y: 0 });
+		
+		// Results viewing state
+		selectedNodeForResults = $state<AutomationNode | null>(null);
+		
+		// Results panel state
+		isPanelCollapsed = $state(false);
 		
 		// Execution state
 		isExecuting = $state(false);
@@ -60,6 +67,9 @@
 
 		onNodeClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
 			console.log('Node clicked:', node);
+
+			// Set selected node for results viewing
+			this.selectedNodeForResults = node;
 
 			// Open modal for configurable nodes (LLM and JIRA nodes)
 			if (
@@ -264,6 +274,35 @@
 			}
 		}
 
+		// Get execution result for the selected node
+		getSelectedNodeResult(): ExecutionResult | null {
+			if (!this.selectedNodeForResults || !this.lastExecutionResult) {
+				return null;
+			}
+			
+			return this.lastExecutionResult.results.find(
+				result => result.nodeId === this.selectedNodeForResults!.id
+			) || null;
+		}
+
+		// Clear execution results
+		clearExecutionResults() {
+			this.lastExecutionResult = null;
+			console.log('Execution results cleared');
+		}
+
+		// Handle panel collapse state change
+		handlePanelCollapseChange(isCollapsed: boolean) {
+			this.isPanelCollapsed = isCollapsed;
+		}
+
+		// Toggle results panel
+		toggleResultsPanel() {
+			this.isPanelCollapsed = !this.isPanelCollapsed;
+			// Trigger the panel to update its state
+			this.handlePanelCollapseChange(this.isPanelCollapsed);
+		}
+
 		// Execute current flow
 		async executeCurrentFlow() {
 			if (this.isExecuting) {
@@ -336,7 +375,10 @@
 	}
 
 	// Props for external control
-	const { onNodeAdd }: { onNodeAdd?: (editor: FlowEditor) => void } = $props();
+	const { onNodeAdd, onPanelStateChange }: { 
+		onNodeAdd?: (editor: FlowEditor) => void;
+		onPanelStateChange?: (isCollapsed: boolean) => void;
+	} = $props();
 
 	const flowEditor = new FlowEditor();
 
@@ -344,6 +386,13 @@
 	$effect(() => {
 		if (onNodeAdd) {
 			onNodeAdd(flowEditor);
+		}
+	});
+
+	// Notify parent when panel state changes
+	$effect(() => {
+		if (onPanelStateChange) {
+			onPanelStateChange(flowEditor.isPanelCollapsed);
 		}
 	});
 
@@ -403,24 +452,38 @@
 </script>
 
 {#if browser && flowLoaded && SvelteFlow}
-	<div
-		class="flow-container h-full w-full transition-colors duration-300 flow-theme-{flowThemeClass}"
-		style="--flow-bg-color: {flowStyles.backgroundColor}; --flow-text-color: {flowStyles.color};"
-	>
-		<SvelteFlow
-			nodes={flowEditor.nodes}
-			edges={flowEditor.edges}
-			onnodeclick={handleNodeClick}
-			onedgeclick={handleEdgeClick}
-			onnodedragstop={handleNodeDragStop}
+	<div class="flex h-full w-full">
+		<!-- Flow Editor Area -->
+		<div
+			class="flex-1 flow-container transition-colors duration-300 flow-theme-{flowThemeClass}"
+			style="--flow-bg-color: {flowStyles.backgroundColor}; --flow-text-color: {flowStyles.color};"
 		>
-			<Background
-				variant="dots"
-				color={backgroundProps.color}
-				size={backgroundProps.size}
-				gap={backgroundProps.gap}
-			/>
-		</SvelteFlow>
+			<SvelteFlow
+				nodes={flowEditor.nodes}
+				edges={flowEditor.edges}
+				onnodeclick={handleNodeClick}
+				onedgeclick={handleEdgeClick}
+				onnodedragstop={handleNodeDragStop}
+			>
+				<Background
+					variant="dots"
+					color={backgroundProps.color}
+					size={backgroundProps.size}
+					gap={backgroundProps.gap}
+				/>
+			</SvelteFlow>
+		</div>
+
+		<!-- Results Panel -->
+		<ResultsPanelLayout
+			selectedNode={flowEditor.selectedNodeForResults}
+			selectedNodeResult={flowEditor.getSelectedNodeResult()}
+			flowExecutionResult={flowEditor.lastExecutionResult}
+			isExecuting={flowEditor.isExecuting}
+			onClearResults={() => flowEditor.clearExecutionResults()}
+			onCollapseChange={(isCollapsed) => flowEditor.handlePanelCollapseChange(isCollapsed)}
+			isCollapsedExternal={flowEditor.isPanelCollapsed}
+		/>
 	</div>
 {:else}
 	<div
