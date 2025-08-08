@@ -2,8 +2,10 @@
 	import FlowEditor from '../components/flow/FlowEditor.svelte';
 	import HamburgerMenu from '../components/layout/HamburgerMenu.svelte';
 	import { AddNodeButton, NodeSelectionModal } from '../components/nodes';
+	import { ToastContainer } from '../components/ui';
 	import { PanelRight } from 'lucide-svelte';
 	import { themeManager } from '../lib/stores/theme.svelte';
+	import { toastStore } from '../lib/stores/toast.svelte';
 	import '../lib/examples/run-demo'; // Make demo available in console
 
 	// Modal state management
@@ -23,6 +25,15 @@
 		console.log('Adding automation node to canvas:', nodeId);
 		if (flowEditor) {
 			flowEditor.addAutomationNode(nodeId);
+			// Show success toast for node addition
+			const nodeNames = {
+				'llm': 'LLM Node',
+				'jira-create-story': 'Create JIRA Story',
+				'jira-add-comment': 'Add JIRA Comment',
+				'get-jira-story': 'Get JIRA Story'
+			} as const;
+			const nodeName = nodeNames[nodeId as keyof typeof nodeNames] || nodeId;
+			toastStore.success('Node added', `${nodeName} has been added to the canvas`);
 		}
 		closeNodeModal();
 	}
@@ -45,6 +56,7 @@
 	function handleResetCanvas() {
 		if (flowEditor) {
 			flowEditor.resetCanvas();
+			toastStore.info('Canvas reset', 'All nodes and connections have been cleared');
 		}
 	}
 
@@ -56,14 +68,23 @@
 				
 				if (result?.success) {
 					console.log('✅ Flow executed successfully!');
-					alert(`✅ Flow executed successfully!\nDuration: ${result.totalDuration}ms\nNodes executed: ${result.executionOrder.join(' → ')}`);
+					toastStore.success(
+						'Flow executed successfully!',
+						`Duration: ${result.totalDuration}ms | Nodes: ${result.executionOrder.join(' → ')}`
+					);
 				} else {
 					console.error('❌ Flow execution failed');
-					alert('❌ Flow execution failed. Check console for details.');
+					toastStore.error(
+						'Flow execution failed',
+						'Check the console for detailed error information.'
+					);
 				}
 			} catch (error) {
 				console.error('❌ Flow execution error:', error);
-				alert('❌ Flow execution error. Check console for details.');
+				toastStore.error(
+					'Flow execution error',
+					error instanceof Error ? error.message : 'An unexpected error occurred. Check the console for details.'
+				);
 			}
 		}
 	}
@@ -110,3 +131,6 @@
 		/>
 	</div>
 </div>
+
+<!-- Toast Container for notifications -->
+<ToastContainer />

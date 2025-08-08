@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X, Bot, MessageSquare, Plus } from 'lucide-svelte';
+	import { X, Bot, MessageSquare, Plus, Search } from 'lucide-svelte';
 
 	// Node categories for your automation workflow
 	const nodeCategories = [
@@ -33,6 +33,13 @@
 					description: 'Add a comment to an existing JIRA story',
 					icon: MessageSquare,
 					color: 'bg-green-500'
+				},
+				{
+					id: 'get-jira-story',
+					name: 'Get Story',
+					description: 'Retrieve details of an existing JIRA story',
+					icon: Search,
+					color: 'bg-blue-600'
 				}
 			]
 		}

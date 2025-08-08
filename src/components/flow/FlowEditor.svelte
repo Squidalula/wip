@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { NodeData, type AutomationNode } from '../../lib/stores/nodes';
 	import { themeManager } from '../../lib/stores/theme.svelte';
+	import { toastStore } from '../../lib/stores/toast.svelte';
 	import NodeModal from '../nodes/DynamicNodeModal.svelte';
 	import ResultsPanelLayout from '../ui/ResultsPanelLayout.svelte';
 	import { getNodeSchema } from '../../lib/types/node-schemas';
@@ -15,17 +16,28 @@
 	let Controls = $state<any>(null);
 	let Background = $state<any>(null);
 
-	export class FlowEditor {
+		export class FlowEditor {
 		nodes: any[] = $state([]);
 		edges: any[] = $state([]);
 		currentFlowId: string | null = $state(null);
 
+		// Update node selection state for visual feedback
+		get nodesWithSelection() {
+			return this.nodes.map(node => ({
+				...node,
+				selected: node.id === this.selectedNodeForDeletion?.id
+			}));
+		}
 
+		
 		isModalOpen = $state(false);
 		selectedNode = $state<AutomationNode | null>(null);
 		modalPosition = $state({ x: 0, y: 0 });
 		
 		selectedNodeForResults = $state<AutomationNode | null>(null);
+		
+		// Track selected node for keyboard deletion
+		selectedNodeForDeletion = $state<AutomationNode | null>(null);
 		
 		isPanelCollapsed = $state(false);
 		
@@ -49,7 +61,7 @@
 				nodeType = 'logic';
 			} else if (category === 'javascript') {
 				nodeType = 'code';
-			} else if (['llm', 'jira-create-story', 'jira-add-comment'].includes(category)) {
+			} else if (['llm', 'jira-create-story', 'jira-add-comment', 'get-jira-story'].includes(category)) {
 				nodeType = 'action';
 			}
 
@@ -60,27 +72,38 @@
 			setTimeout(() => this.updateNodeValidation(), 100);
 		}
 
-		onNodeClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
+				onNodeClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
 			console.log('Node clicked:', node);
 			this.selectedNodeForResults = node;
+			
+			// Track selected node for keyboard deletion
+			this.selectedNodeForDeletion = node;
+		}
 
-
+		onNodeDoubleClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
+			console.log('Node double-clicked:', node);
+			
+			// Only open modal for configurable nodes
 			if (
 				node.category === 'llm' ||
 				node.category === 'jira-create-story' ||
-				node.category === 'jira-add-comment'
+				node.category === 'jira-add-comment' ||
+				node.category === 'get-jira-story'
 			) {
 				this.selectedNode = node;
 
-
+				
 				if ('clientX' in event && 'clientY' in event) {
 					this.modalPosition = { x: event.clientX, y: event.clientY };
 				} else {
-
+					
 					this.modalPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 				}
 
 				this.isModalOpen = true;
+			} else {
+				// Show a helpful message for non-configurable nodes
+				toastStore.info('Node selected', 'This node type doesn\'t have configuration options');
 			}
 		}
 
@@ -103,9 +126,10 @@
 					...this.nodes.slice(nodeIndex + 1)
 				];
 
-				console.log('Node configuration saved:', nodeId, config);
-				console.log('Updated node:', updatedNode);
-				this.updateNodeValidation();
+							console.log('Node configuration saved:', nodeId, config);
+			console.log('Updated node:', updatedNode);
+			toastStore.success('Configuration saved', `Node settings have been updated`);
+			this.updateNodeValidation();
 			}
 		}
 
@@ -189,7 +213,32 @@
 			this.nodes = this.nodes.filter((node) => node.id !== nodeId);
 
 			this.edges = this.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
+			
+			// Clear selections if the deleted node was selected
+			if (this.selectedNodeForDeletion?.id === nodeId) {
+				this.selectedNodeForDeletion = null;
+			}
+			if (this.selectedNodeForResults?.id === nodeId) {
+				this.selectedNodeForResults = null;
+			}
+			if (this.selectedNode?.id === nodeId) {
+				this.selectedNode = null;
+			}
+			
 			console.log('Node deleted:', nodeId);
+			toastStore.warning('Node deleted', 'Node and its connections have been removed');
+		}
+
+		// Handle keyboard deletion
+		handleKeyboardDelete() {
+			if (this.selectedNodeForDeletion && !this.isModalOpen) {
+				this.deleteNode(this.selectedNodeForDeletion.id);
+			}
+		}
+
+		// Clear node selection when clicking on empty space
+		clearSelection() {
+			this.selectedNodeForDeletion = null;
 		}
 
 		closeModal() {
@@ -358,6 +407,12 @@
 			this.edges = [];
 			this.currentFlowId = null;
 			this.lastExecutionResult = null;
+			
+			// Clear all selections
+			this.selectedNodeForDeletion = null;
+			this.selectedNodeForResults = null;
+			this.selectedNode = null;
+			
 			console.log('Canvas reset');
 
 			setTimeout(() => this.updateNodeValidation(), 100);
@@ -397,6 +452,10 @@
 		flowEditor.onNodeClick({ node, event });
 	}
 
+	function handleNodeDoubleClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
+		flowEditor.onNodeDoubleClick({ node, event });
+	}
+
 	function handleEdgeClick({ edge, event }: { edge: any; event: MouseEvent }) {
 		flowEditor.onEdgeClick({ edge, event });
 	}
@@ -404,6 +463,25 @@
 	function handleNodeDragStop({ targetNode }: { targetNode: any }) {
 		if (targetNode) {
 			flowEditor.updateNodePosition(targetNode.id, targetNode.position);
+		}
+	}
+
+	// Handle keyboard events for deletion
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Delete' || event.key === 'Backspace') {
+			event.preventDefault();
+			flowEditor.handleKeyboardDelete();
+		}
+	}
+
+	// Handle clicks on empty space to clear selection
+	function handlePaneClick(event: MouseEvent) {
+		// Only clear selection if clicking directly on the pane, not on nodes
+		const target = event.target as HTMLElement;
+		if (target.classList.contains('svelte-flow__pane') || 
+			target.classList.contains('svelte-flow__renderer') ||
+			target.closest('.svelte-flow__background')) {
+			flowEditor.clearSelection();
 		}
 	}
 
@@ -503,21 +581,44 @@
 	:global(.svelte-flow .react-flow__controls button) {
 		cursor: pointer !important;
 	}
+
+	/* Node interaction styling */
+    :global(.svelte-flow__node) {
+        cursor: pointer !important;
+    }
+
+	/* Selected node styling */
+	:global(.svelte-flow__node.selected) {
+		outline: 2px solid #3b82f6 !important;
+		outline-offset: 2px;
+		box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+	}
+	
+	:global(.svelte-flow__node.selected .node-content) {
+		border-color: #3b82f6 !important;
+	}
+
+    /* remove selected:hover transforms to avoid layout jitter */
 </style>
+
+<!-- Global keyboard event listener -->
+<svelte:window onkeydown={handleKeydown} />
 
 {#if browser && flowLoaded && SvelteFlow}
 	<div class="flex h-full w-full">
 
-		<div
-			class="flex-1 transition-colors duration-300 flow-theme-{flowThemeClass}"
-			style="background-color: {flowStyles.backgroundColor}; color: {flowStyles.color};"
-		>
+        <div
+            class="flex-1 transition-colors duration-300 flow-theme-{flowThemeClass} overflow-hidden"
+            style="background-color: {flowStyles.backgroundColor}; color: {flowStyles.color};"
+        >
 			<SvelteFlow
-				nodes={flowEditor.nodes}
+				nodes={flowEditor.nodesWithSelection}
 				edges={flowEditor.edges}
 				onnodeclick={handleNodeClick}
+                onnodedblclick={handleNodeDoubleClick}
 				onedgeclick={handleEdgeClick}
 				onnodedragstop={handleNodeDragStop}
+				onpaneclick={handlePaneClick}
 			>
 				<Background
 					variant="dots"
@@ -529,15 +630,15 @@
 		</div>
 
 
-		<ResultsPanelLayout
+        <ResultsPanelLayout
 			selectedNode={flowEditor.selectedNodeForResults}
 			selectedNodeResult={flowEditor.getSelectedNodeResult()}
 			flowExecutionResult={flowEditor.lastExecutionResult}
 			isExecuting={flowEditor.isExecuting}
 			onClearResults={() => flowEditor.clearExecutionResults()}
 			onCollapseChange={(isCollapsed) => flowEditor.handlePanelCollapseChange(isCollapsed)}
-			isCollapsedExternal={flowEditor.isPanelCollapsed}
-		/>
+            isCollapsedExternal={flowEditor.isPanelCollapsed}
+        />
 	</div>
 {:else}
 	<div

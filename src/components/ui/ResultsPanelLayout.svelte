@@ -95,10 +95,10 @@
 </script>
 
 
-<div class="flex h-full">
+<div class="flex h-full relative z-[110]">
 
-	<div 
-		class="flex flex-col transition-all duration-300 ease-in-out {isCollapsed ? 'w-0' : 'w-96'} min-w-0"
+    <div 
+        class="flex flex-col transition-all duration-300 ease-in-out {isCollapsed ? 'w-0' : 'w-96'} min-w-0 z-[110] relative"
 		style="background-color: {panelStyles().backgroundColor}; border-left: 2px solid {panelStyles().borderColor};"
 	>
 		{#if !isCollapsed}

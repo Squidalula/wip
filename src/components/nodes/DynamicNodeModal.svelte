@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X, Bot, MessageSquare, Plus, MessageCircle, Database } from 'lucide-svelte';
+	import { X, Bot, MessageSquare, Plus, MessageCircle, Database, Search } from 'lucide-svelte';
 	import { getNodeSchema } from '../../lib/types/node-schemas';
 	import FormField from '../ui/FormField.svelte';
 
@@ -40,7 +40,8 @@
 		MessageSquare,
 		Plus,
 		MessageCircle,
-		Database
+		Database,
+		Search
 	};
 
 	// Initialize config when node changes

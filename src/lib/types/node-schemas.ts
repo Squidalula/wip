@@ -181,6 +181,26 @@ export const nodeSchemas: Record<string, NodeConfigSchema> = {
 		}
 	},
 
+	'get-jira-story': {
+		nodeType: 'get-jira-story',
+		title: 'Get JIRA Story',
+		icon: 'Search',
+		iconColor: 'text-blue-600',
+		fields: [
+			{
+				id: 'issueKey',
+				label: 'Issue Key',
+				type: 'text',
+				placeholder: 'e.g., PROJ-123',
+				required: true,
+				helpText: 'The JIRA issue key to retrieve - all available data will be fetched'
+			}
+		],
+		defaults: {
+			issueKey: ''
+		}
+	},
+
 	'slack-message': {
 		nodeType: 'slack-message',
 		title: 'Send Slack Message',

@@ -26,6 +26,7 @@ export class NodeData {
 			// JIRA Nodes
 			'jira-create-story': { label: 'Create Story', color: '#3b82f6', description: 'Create JIRA story' },
 			'jira-add-comment': { label: 'Add Comment', color: '#10b981', description: 'Add JIRA comment' },
+			'get-jira-story': { label: 'Get Story', color: '#2563eb', description: 'Retrieve JIRA story details' },
 			
 			// Legacy nodes for backward compatibility
 			webhook: { label: 'Webhook', color: '#3b82f6', description: 'Receive HTTP requests' },
