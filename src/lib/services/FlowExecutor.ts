@@ -103,7 +103,7 @@ export class FlowExecutor {
             if (inputsList.length === 1) {
                 inputs = { context: inputsList[0] };
             } else if (inputsList.length > 1) {
-                inputs = { sources: inputsList };
+                inputs = { context: inputsList };
             }
 
             const config = node.data?.config || {};
@@ -114,7 +114,8 @@ export class FlowExecutor {
                 case 'get-jira-story':
                     data = {
                         jiraKey: config.issueKey || config.jiraKey,
-                        accessToken: jiraAccessToken,
+                        email: 'hardcoded@example.com',
+                        apiToken: jiraAccessToken,
                     };
                     break;
                 case 'jira-create-story':
@@ -139,8 +140,6 @@ export class FlowExecutor {
                     data = {
                         prompt: config.prompt,
                         model: config.model,
-                        temperature: config.temperature,
-                        maxTokens: config.maxTokens,
                     };
                     break;
                 default:
@@ -153,8 +152,21 @@ export class FlowExecutor {
         return tasks;
     }
 
+    /**
+     * Build a graph-shaped payload with nodes and edges for the backend
+     */
+    private buildGraphPayload(flow: FlowData, orderedNodeIds: string[]): {
+        nodes: Array<{ id: string; type: string; inputs?: Record<string, any>; data?: Record<string, any> }>;
+    } {
+        const nodes = this.buildExecutionTasks(flow, orderedNodeIds).map((t) => ({
+            id: t.id,
+            type: t.type,
+            inputs: t.inputs,
+            data: t.data,
+        }));
+        return { nodes };
+    }
 
-	
 
 	getParallelExecutionGroups(nodes: AutomationNode[], edges: Edge[]): string[][] {
 		const graph = new Map<string, string[]>();
@@ -217,27 +229,11 @@ export class FlowExecutor {
 	private async executeNode(node: AutomationNode, context: Map<string, any>): Promise<ExecutionResult> {
 		const startTime = Date.now();
 		
-		try {
-			console.log(`Executing node: ${node.id} (${node.category})`);
-			
-			let output: any;
-			
-			switch (node.category) {
-				case 'llm':
-					output = await this.executeLLMNode(node, context);
-					break;
-				case 'jira-create-story':
-					output = await this.executeJiraCreateStory(node, context);
-					break;
-				case 'jira-add-comment':
-					output = await this.executeJiraAddComment(node, context);
-					break;
-				case 'get-jira-story':
-					output = await this.executeGetJiraStory(node, context);
-					break;
-				default:
-					throw new Error(`Unknown node category: ${node.category}`);
-			}
+        try {
+            console.log(`Executing node: ${node.id} (${node.category})`);
+            
+            // Local execution is deprecated; backend handles execution.
+            const output: any = {};
 			
 			const duration = Date.now() - startTime;
 			
@@ -260,155 +256,13 @@ export class FlowExecutor {
 		}
 	}
 	
-	/**
-	 * Execute LLM node
-	 */
-	private async executeLLMNode(node: AutomationNode, context: Map<string, any>): Promise<any> {
-		const config = node.data.config || {};
-		const prompt = this.substituteVariables(config.prompt || '', context);
-		
-		// Simulate LLM API call
-		console.log(`LLM Request: ${prompt}`);
-		
-		// Mock response - replace with actual API call
-		const response = `Generated response for: ${prompt}`;
-		
-		// Store result in context for other nodes
-		context.set(`${node.id}.response`, response);
-		context.set('llm.response', response); // Global LLM response
-		
-		return { response, prompt };
-	}
+    // Legacy local execution methods retained for reference during transition, but not used
 	
-	/**
-	 * Execute JIRA create story node
-	 */
-	private async executeJiraCreateStory(node: AutomationNode, context: Map<string, any>): Promise<any> {
-		const config = node.data.config || {};
-		const summary = this.substituteVariables(config.summary || '', context);
-		const description = this.substituteVariables(config.description || '', context);
-		
-		// Simulate JIRA API call
-		console.log(`Creating JIRA story: ${summary}`);
-		
-		// Mock response - replace with actual JIRA API call
-		const storyId = `DEMO-${Math.floor(Math.random() * 1000)}`;
-		
-		context.set(`${node.id}.storyId`, storyId);
-		
-		return { storyId, summary, description };
-	}
+    private async executeJiraCreateStory() { return {}; }
 	
-	/**
-	 * Execute JIRA add comment node
-	 */
-	private async executeJiraAddComment(node: AutomationNode, context: Map<string, any>): Promise<any> {
-		const config = node.data.config || {};
-		const comment = this.substituteVariables(config.comment || '', context);
-		const storyId = this.substituteVariables(config.storyId || '', context);
-		
-		console.log(`Adding comment to ${storyId}: ${comment}`);
-		
-		return { commentId: `comment-${Date.now()}`, storyId, comment };
-	}
+    private async executeJiraAddComment() { return {}; }
 
-	/**
-	 * Execute get JIRA story node
-	 */
-	private async executeGetJiraStory(node: AutomationNode, context: Map<string, any>): Promise<any> {
-		const config = node.data.config || {};
-		const issueKey = this.substituteVariables(config.issueKey || '', context);
-		
-		console.log(`Retrieving JIRA story: ${issueKey} (fetching all available data)`);
-		
-		// Mock response with all available data - replace with actual JIRA API call
-		const mockStory = {
-			key: issueKey,
-			summary: `Sample story ${issueKey}`,
-			description: 'This is a sample JIRA story description',
-			status: 'In Progress',
-			priority: 'Medium',
-			assignee: 'john.doe@example.com',
-			reporter: 'jane.smith@example.com',
-			created: new Date().toISOString(),
-			updated: new Date().toISOString(),
-			dueDate: null,
-			labels: ['backend', 'api'],
-			components: ['Core API'],
-			fixVersions: ['v2.1.0'],
-			issueType: 'Story',
-			storyPoints: 5,
-			epic: 'PROJ-100',
-			sprint: 'Sprint 23',
-			comments: [
-				{
-					id: 'comment-1',
-					author: 'jane.smith@example.com',
-					body: 'This is a sample comment',
-					created: new Date().toISOString()
-				},
-				{
-					id: 'comment-2',
-					author: 'john.doe@example.com',
-					body: 'Working on this now',
-					created: new Date().toISOString()
-				}
-			],
-			history: [
-				{
-					id: 'history-1',
-					author: 'john.doe@example.com',
-					created: new Date().toISOString(),
-					items: [
-						{
-							field: 'status',
-							fromString: 'To Do',
-							toString: 'In Progress'
-						}
-					]
-				},
-				{
-					id: 'history-2',
-					author: 'jane.smith@example.com',
-					created: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-					items: [
-						{
-							field: 'assignee',
-							fromString: null,
-							toString: 'john.doe@example.com'
-						}
-					]
-				}
-			],
-			attachments: [
-				{
-					id: 'attachment-1',
-					filename: 'requirements.pdf',
-					size: 1024000,
-					mimeType: 'application/pdf',
-					created: new Date().toISOString()
-				}
-			],
-			subtasks: [
-				{
-					key: `${issueKey}-1`,
-					summary: 'Subtask 1: API endpoint',
-					status: 'Done'
-				},
-				{
-					key: `${issueKey}-2`,
-					summary: 'Subtask 2: Database schema',
-					status: 'In Progress'
-				}
-			]
-		};
-
-		// Store result in context for other nodes
-		context.set(`${node.id}.story`, mockStory);
-		context.set(`${node.id}.issueKey`, issueKey);
-		
-		return { story: mockStory, issueKey };
-	}
+    private async executeGetJiraStory() { return {}; }
 	
 	/**
 	 * Substitute variables in text (e.g., {{llm.response}})
@@ -428,17 +282,16 @@ export class FlowExecutor {
         try {
             // Determine execution order and build tasks
             const executionOrder = this.topologicalSort(flow.nodes, flow.edges);
-            const tasks = this.buildExecutionTasks(flow, executionOrder);
-
-            // Send to backend
-            const response = await executionClient.execute(tasks);
+            // Build nodes/edges graph payload and send to backend
+            const graphPayload = this.buildGraphPayload(flow, executionOrder);
+            const response = await executionClient.executeGraph(graphPayload);
 
             // Map results
             const resultById = new Map(response.results.map((r) => [r.id, r]));
-            const results: ExecutionResult[] = tasks.map((t) => {
-                const r = resultById.get(t.id);
+            const results: ExecutionResult[] = graphPayload.nodes.map((n) => {
+                const r = resultById.get(n.id);
                 return {
-                    nodeId: t.id,
+                    nodeId: n.id,
                     success: r?.success ?? false,
                     output: r?.output,
                     error: r?.error,
@@ -472,60 +325,37 @@ export class FlowExecutor {
 	 * Execute flow with parallel execution where possible
 	 */
 	async executeFlowParallel(flow: FlowData): Promise<FlowExecutionResult> {
+		// For MVP consistency, reuse the same backend execution path as executeFlow
 		const startTime = Date.now();
-		const context = new Map<string, any>();
-		const results: ExecutionResult[] = [];
-		
 		try {
-			// Get parallel execution groups
-			const groups = this.getParallelExecutionGroups(flow.nodes, flow.edges);
-			console.log('Parallel execution groups:', groups);
-			
-			const executionOrder: string[] = [];
-			
-			// Execute each group in parallel
-			for (const group of groups) {
-				const groupPromises = group.map(async nodeId => {
-					const node = flow.nodes.find(n => n.id === nodeId);
-					if (!node) {
-						throw new Error(`Node ${nodeId} not found`);
-					}
-					
-					return await this.executeNode(node, context);
-				});
-				
-				const groupResults = await Promise.all(groupPromises);
-				results.push(...groupResults);
-				executionOrder.push(...group);
-				
-				// Check if any node in the group failed
-				const groupFailed = groupResults.some(r => !r.success);
-				if (groupFailed) {
-					console.error('Group execution failed');
-					break;
-				}
-			}
-			
-			const totalDuration = Date.now() - startTime;
-			const success = results.every(r => r.success);
-			
+			const executionOrder = this.topologicalSort(flow.nodes, flow.edges);
+			const tasks = this.buildExecutionTasks(flow, executionOrder);
+			const response = await executionClient.execute(tasks);
+			const resultById = new Map(response.results.map((r) => [r.id, r]));
+			const results: ExecutionResult[] = tasks.map((t) => {
+				const r = resultById.get(t.id);
+				return {
+					nodeId: t.id,
+					success: r?.success ?? false,
+					output: r?.output,
+					error: r?.error,
+					duration: r?.duration ?? 0,
+				};
+			});
 			return {
 				flowId: flow.id,
-				success,
+				success: results.every((r) => r.success),
 				results,
-				totalDuration,
-				executionOrder
+				totalDuration: Date.now() - startTime,
+				executionOrder,
 			};
-			
-		} catch (error) {
-			const totalDuration = Date.now() - startTime;
-			
+		} catch {
 			return {
 				flowId: flow.id,
 				success: false,
-				results,
-				totalDuration,
-				executionOrder: []
+				results: [],
+				totalDuration: Date.now() - startTime,
+				executionOrder: [],
 			};
 		}
 	}

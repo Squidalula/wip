@@ -72,18 +72,13 @@
 			setTimeout(() => this.updateNodeValidation(), 100);
 		}
 
-				onNodeClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
+		onNodeClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
 			console.log('Node clicked:', node);
 			this.selectedNodeForResults = node;
-			
 			// Track selected node for keyboard deletion
 			this.selectedNodeForDeletion = node;
-		}
 
-		onNodeDoubleClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
-			console.log('Node double-clicked:', node);
-			
-			// Only open modal for configurable nodes
+			// Open modal for configurable nodes (single-click behavior)
 			if (
 				node.category === 'llm' ||
 				node.category === 'jira-create-story' ||
@@ -91,19 +86,13 @@
 				node.category === 'get-jira-story'
 			) {
 				this.selectedNode = node;
-
-				
 				if ('clientX' in event && 'clientY' in event) {
-					this.modalPosition = { x: event.clientX, y: event.clientY };
+					this.modalPosition = { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY };
 				} else {
-					
 					this.modalPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 				}
-
 				this.isModalOpen = true;
-			} else {
-				// Show a helpful message for non-configurable nodes
-				toastStore.info('Node selected', 'This node type doesn\'t have configuration options');
+				onConfigModalStateChange?.(true);
 			}
 		}
 
@@ -244,7 +233,7 @@
 		closeModal() {
 			this.isModalOpen = false;
 			this.selectedNode = null;
-
+			onConfigModalStateChange?.(false);
 		}
 
 		onEdgeClick({ edge, event }: { edge: any; event: MouseEvent }) {
@@ -420,10 +409,11 @@
 	}
 
 
-	const { onNodeAdd, onPanelStateChange }: { 
-		onNodeAdd?: (editor: FlowEditor) => void;
-		onPanelStateChange?: (isCollapsed: boolean) => void;
-	} = $props();
+const { onNodeAdd, onPanelStateChange, onConfigModalStateChange }: { 
+    onNodeAdd?: (editor: FlowEditor) => void;
+    onPanelStateChange?: (isCollapsed: boolean) => void;
+    onConfigModalStateChange?: (isOpen: boolean) => void;
+} = $props();
 
 	const flowEditor = new FlowEditor();
 
@@ -452,9 +442,7 @@
 		flowEditor.onNodeClick({ node, event });
 	}
 
-	function handleNodeDoubleClick({ node, event }: { node: any; event: MouseEvent | TouchEvent }) {
-		flowEditor.onNodeDoubleClick({ node, event });
-	}
+    // no-op: single-click opens modal now
 
 	function handleEdgeClick({ edge, event }: { edge: any; event: MouseEvent }) {
 		flowEditor.onEdgeClick({ edge, event });
@@ -615,7 +603,6 @@
 				nodes={flowEditor.nodesWithSelection}
 				edges={flowEditor.edges}
 				onnodeclick={handleNodeClick}
-                onnodedblclick={handleNodeDoubleClick}
 				onedgeclick={handleEdgeClick}
 				onnodedragstop={handleNodeDragStop}
 				onpaneclick={handlePaneClick}

@@ -9,9 +9,10 @@
 	import '../lib/examples/run-demo'; // Make demo available in console
 
 	// Modal state management
-	let showNodeModal = $state(false);
+    let showNodeModal = $state(false);
 	let flowEditor: any = null;
 	let isPanelCollapsed = $state(false);
+    let isConfigModalOpen = $state(false);
 
 	function openNodeModal() {
 		showNodeModal = true;
@@ -46,9 +47,9 @@
 		isPanelCollapsed = isCollapsed;
 	}
 
-	function togglePanel() {
+    function togglePanel() {
 		// We need to communicate with the ResultsPanelLayout to toggle it
-		if (flowEditor) {
+        if (flowEditor && !isConfigModalOpen) {
 			flowEditor.toggleResultsPanel();
 		}
 	}
@@ -93,33 +94,33 @@
 <div class="flex h-screen">
 	<div class="flex-1">
 		<HamburgerMenu onReset={handleResetCanvas} />
-		<FlowEditor onNodeAdd={handleFlowEditorReady} onPanelStateChange={handlePanelStateChange} />
+        <FlowEditor onNodeAdd={handleFlowEditorReady} onPanelStateChange={handlePanelStateChange} onConfigModalStateChange={(open) => (isConfigModalOpen = open)} />
 		<AddNodeButton onAddClick={openNodeModal} isPanelCollapsed={isPanelCollapsed} />
 		
 		<!-- Execute Flow and Toggle Panel Buttons -->
-		{#if !showNodeModal}
+        {#if !showNodeModal && !isConfigModalOpen}
 			<div class="fixed top-4 z-[100] transition-all duration-300 flex gap-2" style="right: {isPanelCollapsed ? '16px' : '400px'};">
 				<!-- Execute Flow Button -->
-				<button 
-					class="btn btn-success shadow-lg cursor-pointer hover:btn-success"
-					onclick={handleExecuteFlow}
-					title="Execute Current Flow"
-					style="pointer-events: auto;"
-				>
+                <button 
+                    class="btn btn-success shadow-lg cursor-pointer hover:btn-success"
+                    onclick={handleExecuteFlow}
+                    title="Execute Current Flow"
+                    style="pointer-events: auto;"
+                >
 					▶️ Execute
 				</button>
 
 				<!-- Toggle Panel Button -->
-				<button 
-					class="btn btn-circle shadow-lg cursor-pointer transition-all duration-300"
-					onclick={togglePanel}
-					title={isPanelCollapsed ? 'Show Results Panel' : 'Hide Results Panel'}
-					style="
-						background-color: {themeManager.isCurrentThemeDark() ? '#374151' : '#f3f4f6'}; 
-						color: {themeManager.isCurrentThemeDark() ? '#f9fafb' : '#374151'};
-						border: 1px solid {themeManager.isCurrentThemeDark() ? '#4b5563' : '#d1d5db'};
-					"
-				>
+                <button 
+                    class="btn btn-circle shadow-lg cursor-pointer transition-all duration-300"
+                    onclick={togglePanel}
+                    title={isPanelCollapsed ? 'Show Results Panel' : 'Hide Results Panel'}
+                    style="
+                        background-color: {themeManager.isCurrentThemeDark() ? '#374151' : '#f3f4f6'}; 
+                        color: {themeManager.isCurrentThemeDark() ? '#f9fafb' : '#374151'};
+                        border: 1px solid {themeManager.isCurrentThemeDark() ? '#4b5563' : '#d1d5db'};
+                    "
+                >
 					<PanelRight class="h-5 w-5" />
 				</button>
 			</div>

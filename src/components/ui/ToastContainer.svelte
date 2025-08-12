@@ -10,8 +10,8 @@
 	}
 </script>
 
-<!-- Toast Container - Fixed positioned at top-right -->
-<div class="toast toast-top toast-end z-[9999] max-w-md w-full p-4">
+<!-- Toast Container - Fixed positioned at bottom-left -->
+<div class="toast toast-bottom toast-start z-[9999] max-w-md w-full p-4">
 	{#each toasts as toast (toast.id)}
 		<ToastNotification {toast} on:dismiss={handleDismiss} />
 	{/each}
